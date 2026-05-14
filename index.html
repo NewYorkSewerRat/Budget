@@ -213,6 +213,15 @@ h1 .g{color:var(--green);}h1 .b{color:transparent;-webkit-text-stroke:1.5px var(
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+.backup-bar{max-width:680px;margin:0 auto;padding:10px 16px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;position:relative;z-index:1;}
+.backup-btn{background:var(--bg2);border:1px solid var(--bg4);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:11px;padding:6px 14px;border-radius:20px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.backup-btn:hover{border-color:var(--green);color:var(--green);}
+.sync-status{font-size:11px;color:var(--text2);display:flex;align-items:center;gap:6px;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--text3);}
+.sync-dot.ok{background:var(--green);}
+.sync-dot.err{background:var(--red);}
+.sync-dot.loading{background:var(--yellow);animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 </style>
 </head>
 <body>
@@ -223,6 +232,16 @@ h1 .g{color:var(--green);}h1 .b{color:transparent;-webkit-text-stroke:1.5px var(
   <p class="eyebrow">Ahmad's Budget</p>
   <h1><span class="g">Smart</span> <span class="b">Budget</span></h1>
 </header>
+
+<div class="backup-bar">
+  <div class="sync-status"><div class="sync-dot loading" id="sync-dot"></div><span id="sync-label">Connecting...</span></div>
+  <div style="display:flex;gap:8px;">
+    <button class="backup-btn" onclick="exportData()">⬇ Export</button>
+    <button class="backup-btn" onclick="document.getElementById('import-input').click()">⬆ Import</button>
+    <input type="file" id="import-input" accept=".json" style="display:none" onchange="importData(event)"/>
+  </div>
+</div>
+</div>
 
 <div class="month-bar">
   <button class="month-nav" onclick="changeMonth(-1)">&#8249;</button>
@@ -449,9 +468,78 @@ var selectedCat='';
 var qaAcc='current';
 var currentTab='add';
 
-function load(){try{var s=localStorage.getItem('ahmads-budget3');if(s)state=JSON.parse(s);}catch(e){}}
-function save(){try{localStorage.setItem('ahmads-budget3',JSON.stringify(state));}catch(e){alert('Storage full.');}}
+var SB_URL='https://oludgjpyrennjfkizmas.supabase.co';
+var SB_KEY='sb_publishable_iPOfDAFeSbuFD95Ibnr05w_U9fQHHvJ';
+function sbFetch(path,opts){
+  return fetch(SB_URL+path,Object.assign({headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'return=representation'}},opts));
+}
+
+function saveLocal(){try{localStorage.setItem('ahmads-budget3',JSON.stringify(state));}catch(e){}}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+
+function setSyncStatus(state,msg){
+  var dot=document.getElementById('sync-dot');
+  var lbl=document.getElementById('sync-label');
+  if(!dot||!lbl)return;
+  dot.className='sync-dot '+state;
+  lbl.textContent=msg;
+}
+
+async function load(){
+  setSyncStatus('loading','Connecting...');
+  try{
+    var [t,g,r,m]=await Promise.all([
+      sbFetch('/rest/v1/budget_transactions?select=*&order=created_at.desc').then(function(r){return r.json();}),
+      sbFetch('/rest/v1/budget_goals?select=*').then(function(r){return r.json();}),
+      sbFetch('/rest/v1/budget_recurring?select=*').then(function(r){return r.json();}),
+      sbFetch('/rest/v1/budget_meta?select=*').then(function(r){return r.json();})
+    ]);
+    state.transactions=t.map(function(x){return{id:x.id,type:x.type,amount:x.amount,cat:x.cat,note:x.note,date:x.date,acc:x.acc,tfrTo:x.tfr_to};});
+    state.goals=g.map(function(x){return{id:x.id,name:x.name,target:x.target,saved:x.saved};});
+    state.recurring=r.map(function(x){return{id:x.id,name:x.name,amount:x.amount,freq:x.freq,cat:x.cat,acc:x.acc};});
+    state.openingBalances={};
+    m.forEach(function(x){try{state.openingBalances[x.key]=JSON.parse(x.value);}catch(e){state.openingBalances[x.key]=x.value;}});
+    saveLocal();
+    setSyncStatus('ok','Synced');
+  }catch(e){
+    setSyncStatus('err','Offline — local data');
+    try{var s=localStorage.getItem('ahmads-budget3');if(s)state=JSON.parse(s);}catch(ex){}
+  }
+}
+
+async function save(){
+  saveLocal();
+}
+
+async function syncTransaction(txn,isNew){
+  var row={id:txn.id,type:txn.type,amount:txn.amount,cat:txn.cat,note:txn.note,date:txn.date,acc:txn.acc,tfr_to:txn.tfrTo||null};
+  try{
+    if(isNew) await sbFetch('/rest/v1/budget_transactions',{method:'POST',body:JSON.stringify(row)});
+    else await sbFetch('/rest/v1/budget_transactions?id=eq.'+txn.id,{method:'PATCH',body:JSON.stringify(row)});
+  }catch(e){}
+}
+async function deleteTransaction(id){
+  saveLocal();
+  try{await sbFetch('/rest/v1/budget_transactions?id=eq.'+id,{method:'DELETE'});}catch(e){}
+}
+async function syncGoal(g,isNew){
+  try{
+    if(isNew) await sbFetch('/rest/v1/budget_goals',{method:'POST',body:JSON.stringify(g)});
+    else await sbFetch('/rest/v1/budget_goals?id=eq.'+g.id,{method:'PATCH',body:JSON.stringify(g)});
+  }catch(e){}
+}
+async function deleteGoalSB(id){try{await sbFetch('/rest/v1/budget_goals?id=eq.'+id,{method:'DELETE'});}catch(e){}}
+async function syncRecurring(r,isNew){
+  try{
+    if(isNew) await sbFetch('/rest/v1/budget_recurring',{method:'POST',body:JSON.stringify(r)});
+  }catch(e){}
+}
+async function deleteRecurringSB(id){try{await sbFetch('/rest/v1/budget_recurring?id=eq.'+id,{method:'DELETE'});}catch(e){}}
+async function syncOb(key,val){
+  try{
+    await sbFetch('/rest/v1/budget_meta',{method:'POST',body:JSON.stringify({key:key,value:String(val)}),headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'}});
+  }catch(e){}
+}
 
 function getMonthKey(offset){
   var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+offset);
@@ -481,8 +569,10 @@ function openObModal(acc){
 function saveOb(){
   var acc=document.getElementById('ob-acc-type').value;
   var amt=parseFloat(document.getElementById('ob-amount').value)||0;
-  state.openingBalances[getObKey(acc,currentMonthOffset)]=amt;
-  save();closeModal('ob-modal');updateOverview();
+  var key=getObKey(acc,currentMonthOffset);
+  state.openingBalances[key]=amt;
+  saveLocal();syncOb(key,amt);
+  closeModal('ob-modal');updateOverview();
 }
 
 function getMonthTxns(offset){
@@ -614,20 +704,19 @@ function addEntry(){
   var year=document.getElementById('qa-year').value;
   var dateStr=year+'-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');
   var note=document.getElementById('qa-note').value.trim();
-
   if(currentType==='tfr'){
     var from=document.getElementById('tfr-from').value;
     var to=document.getElementById('tfr-to').value;
     if(from===to){showToast('From and To cannot be the same account');return;}
-    state.transactions.unshift({id:uid(),type:'transfer',amount:amt,cat:'transfer',note:note||('Transfer → '+(to==='savings'?'Savings':'Current')),date:dateStr,acc:from,tfrTo:to});
-    save();document.getElementById('qa-amount').value='';document.getElementById('qa-note').value='';
+    var tfr={id:uid(),type:'transfer',amount:amt,cat:'transfer',note:note||('Transfer → '+(to==='savings'?'Savings':'Current')),date:dateStr,acc:from,tfrTo:to};
+    state.transactions.unshift(tfr);saveLocal();syncTransaction(tfr,true);
+    document.getElementById('qa-amount').value='';document.getElementById('qa-note').value='';
     updateOverview();showToast('Transfer logged ✓');return;
   }
-
   var cat=selectedCat||(currentType==='inc'?'income':'other');
   var catObj=CATS.find(function(c){return c.k===cat;})||CATS[CATS.length-1];
-  state.transactions.unshift({id:uid(),type:currentType,amount:amt,cat:cat,note:note||catObj.l,date:dateStr,acc:qaAcc});
-  save();
+  var txn={id:uid(),type:currentType,amount:amt,cat:cat,note:note||catObj.l,date:dateStr,acc:qaAcc};
+  state.transactions.unshift(txn);saveLocal();syncTransaction(txn,true);
   document.getElementById('qa-amount').value='';document.getElementById('qa-note').value='';
   selectedCat='';buildCatChips('');
   document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('selected');});
@@ -685,11 +774,13 @@ function renderTransactions(){
   html+='</div>';sec.innerHTML=html;
 }
 
-function deleteTxn(id){state.transactions=state.transactions.filter(function(t){return t.id!==id;});save();updateOverview();renderTransactions();}
+function deleteTxn(id){
+  state.transactions=state.transactions.filter(function(t){return t.id!==id;});
+  saveLocal();deleteTransaction(id);updateOverview();renderTransactions();
+}
 
 function renderBreakdown(){
   var sec=document.getElementById('sec-breakdown');
-  // exclude transfers from breakdown
   var txns=getMonthTxns(currentMonthOffset).filter(function(t){return t.type==='exp';});
   if(!txns.length){sec.innerHTML='<div class="empty-msg">No expenses this month</div>';return;}
   var totals={};
@@ -725,17 +816,21 @@ function saveGoal(){
   var target=parseFloat(document.getElementById('g-target').value)||0;
   var saved=parseFloat(document.getElementById('g-saved').value)||0;
   if(!name)return;
-  state.goals.push({id:uid(),name:name,target:target,saved:saved});
-  save();closeModal('goal-modal');renderGoals();
+  var g={id:uid(),name:name,target:target,saved:saved};
+  state.goals.push(g);saveLocal();syncGoal(g,true);
+  closeModal('goal-modal');renderGoals();
   document.getElementById('g-name').value='';document.getElementById('g-target').value='';document.getElementById('g-saved').value='';
 }
-function deleteGoal(id){state.goals=state.goals.filter(function(g){return g.id!==id;});save();renderGoals();}
+function deleteGoal(id){
+  state.goals=state.goals.filter(function(g){return g.id!==id;});
+  saveLocal();deleteGoalSB(id);renderGoals();
+}
 function openFundsModal(id){document.getElementById('funds-goal-id').value=id;document.getElementById('funds-amount').value='';openModal('funds-modal');setTimeout(function(){document.getElementById('funds-amount').focus();},100);}
 function saveFunds(){
   var id=document.getElementById('funds-goal-id').value;
   var amt=parseFloat(document.getElementById('funds-amount').value)||0;
   var g=state.goals.find(function(x){return x.id===id;});
-  if(g&&amt>0){g.saved+=amt;save();closeModal('funds-modal');renderGoals();}
+  if(g&&amt>0){g.saved+=amt;saveLocal();syncGoal(g,false);closeModal('funds-modal');renderGoals();}
 }
 
 function renderRecurring(){
@@ -759,15 +854,22 @@ function saveRecurring(){
   var name=document.getElementById('r-name').value.trim();
   var amt=parseFloat(document.getElementById('r-amount').value)||0;
   if(!name||!amt)return;
-  state.recurring.push({id:uid(),name:name,amount:amt,freq:document.getElementById('r-freq').value,cat:document.getElementById('r-cat').value,acc:document.getElementById('r-acc').value});
-  save();closeModal('rec-modal');renderRecurring();
+  var r={id:uid(),name:name,amount:amt,freq:document.getElementById('r-freq').value,cat:document.getElementById('r-cat').value,acc:document.getElementById('r-acc').value};
+  state.recurring.push(r);saveLocal();syncRecurring(r,true);
+  closeModal('rec-modal');renderRecurring();
 }
-function deleteRecurring(id){state.recurring=state.recurring.filter(function(r){return r.id!==id;});save();renderRecurring();}
+function deleteRecurring(id){
+  state.recurring=state.recurring.filter(function(r){return r.id!==id;});
+  saveLocal();deleteRecurringSB(id);renderRecurring();
+}
 function importRecurring(){
   var now=new Date();
   var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  state.recurring.forEach(function(r){state.transactions.unshift({id:uid(),type:'exp',amount:r.amount,cat:r.cat,note:r.name,date:dateStr,acc:r.acc||'current'});});
-  save();updateOverview();showToast(state.recurring.length+' bills imported ✓');
+  state.recurring.forEach(function(r){
+    var txn={id:uid(),type:'exp',amount:r.amount,cat:r.cat,note:r.name,date:dateStr,acc:r.acc||'current'};
+    state.transactions.unshift(txn);syncTransaction(txn,true);
+  });
+  saveLocal();updateOverview();showToast(state.recurring.length+' bills imported ✓');
 }
 function buildRecCatSelect(){
   var sel=document.getElementById('r-cat');sel.innerHTML='';
@@ -786,11 +888,36 @@ function showToast(msg){
 }
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-load();
-document.getElementById('month-label').textContent=getMonthLabel(0);
-initDateSelects();buildPresets();buildCatChips('');buildRecCatSelect();
-updateOverview();
-document.getElementById('qa-panel').style.display='block';
+function exportData(){
+  var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='ahmads-budget-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+}
+function importData(event){
+  var file=event.target.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=async function(e){
+    try{
+      var imported=JSON.parse(e.target.result);
+      if(imported.transactions!==undefined){
+        for(var i=0;i<imported.transactions.length;i++){try{await syncTransaction(imported.transactions[i],true);}catch(ex){}}
+        for(var i=0;i<imported.goals.length;i++){try{await syncGoal(imported.goals[i],true);}catch(ex){}}
+        for(var i=0;i<imported.recurring.length;i++){try{await syncRecurring(imported.recurring[i],true);}catch(ex){}}
+        await load();updateOverview();
+        alert('Data restored successfully!');
+      }else{alert('Invalid backup file');}
+    }catch(err){alert('Could not read file');}
+  };
+  reader.readAsText(file);event.target.value='';
+}
+
+load().then(function(){
+  document.getElementById('month-label').textContent=getMonthLabel(0);
+  initDateSelects();buildPresets();buildCatChips('');buildRecCatSelect();
+  updateOverview();
+  document.getElementById('qa-panel').style.display='block';
+});
 </script>
 </body>
 </html>
