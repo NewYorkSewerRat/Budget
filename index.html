@@ -240,6 +240,45 @@ h1 .g{color:var(--green);}h1 .b{color:transparent;-webkit-text-stroke:1.5px var(
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:2px;}
+
+/* PLANNED PURCHASES */
+.planned-summary{background:var(--bg2);border:1px solid var(--bg4);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+.planned-summary-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:10px;font-weight:500;}
+.planned-summary-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.planned-summary-label{font-size:13px;color:var(--text2);}
+.planned-summary-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--yellow);}
+.planned-month-filter{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.pm-pill{padding:5px 14px;border-radius:20px;font-size:11px;cursor:pointer;border:1px solid var(--bg4);background:var(--bg3);color:var(--text2);transition:all .18s;}
+.pm-pill.active{border-color:var(--yellow);color:var(--yellow);background:rgba(255,209,102,.08);}
+.pp-list{display:flex;flex-direction:column;gap:8px;}
+.pp-card{background:var(--bg2);border:1px solid var(--bg4);border-radius:10px;padding:14px;display:flex;align-items:center;gap:12px;transition:border-color .2s;position:relative;overflow:hidden;}
+.pp-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;}
+.pp-card.planned::before{background:var(--blue);}
+.pp-card.purchased::before{background:var(--green);}
+.pp-card.skipped::before{background:var(--text3);}
+.pp-card.purchased{opacity:.7;}
+.pp-card.skipped{opacity:.5;}
+.pp-card:hover{border-color:var(--bg5);}
+.pp-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.pp-info{flex:1;min-width:0;}
+.pp-name{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pp-meta{font-size:11px;color:var(--text2);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+.pp-priority{font-size:10px;padding:1px 8px;border-radius:10px;}
+.pp-priority.Need{background:rgba(255,94,107,.12);color:var(--red);}
+.pp-priority.Want{background:rgba(255,209,102,.1);color:var(--yellow);}
+.pp-priority.Luxury{background:rgba(167,139,250,.12);color:var(--purple);}
+.pp-status{font-size:10px;padding:1px 8px;border-radius:10px;letter-spacing:1px;text-transform:uppercase;}
+.pp-status.planned{background:rgba(91,156,246,.12);color:var(--blue);}
+.pp-status.purchased{background:rgba(46,204,138,.12);color:var(--green);}
+.pp-status.skipped{background:rgba(148,163,184,.12);color:var(--transfer);}
+.pp-cost{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--yellow);flex-shrink:0;}
+.pp-cost.purchased{color:var(--green);}
+.pp-cost.skipped{color:var(--text3);}
+.pp-actions{display:flex;gap:4px;flex-shrink:0;}
+.pp-act-btn{background:var(--bg3);border:1px solid var(--bg4);color:var(--text3);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.pp-act-btn:hover{color:var(--text);border-color:var(--bg5);}
+.pp-act-btn.buy:hover{color:var(--green);border-color:rgba(46,204,138,.3);}
+.pp-act-btn.del:hover{color:var(--red);border-color:rgba(255,94,107,.3);}
 .backup-bar{max-width:680px;margin:0 auto;padding:10px 16px 0;display:flex;justify-content:space-between;align-items:center;gap:8px;position:relative;z-index:1;}
 .backup-btn{background:var(--bg2);border:1px solid var(--bg4);color:var(--text2);font-family:'DM Sans',sans-serif;font-size:11px;padding:6px 14px;border-radius:20px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;}
 .backup-btn:hover{border-color:var(--green);color:var(--green);}
@@ -318,6 +357,7 @@ h1 .g{color:var(--green);}h1 .b{color:transparent;-webkit-text-stroke:1.5px var(
   <button class="tab-btn" onclick="switchTab('breakdown',this)">📊 Breakdown</button>
   <button class="tab-btn" onclick="switchTab('goals',this)">🎯 Goals</button>
   <button class="tab-btn" onclick="switchTab('recurring',this)">🔁 Recurring</button>
+  <button class="tab-btn" onclick="switchTab('planned',this)">🛒 Planned</button>
 </div>
 
 <!-- QUICK ADD -->
@@ -414,6 +454,64 @@ h1 .g{color:var(--green);}h1 .b{color:transparent;-webkit-text-stroke:1.5px var(
   <div id="sec-breakdown" class="section"></div>
   <div id="sec-goals" class="section"></div>
   <div id="sec-recurring" class="section"></div>
+  <div id="sec-planned" class="section"></div>
+</div>
+
+<!-- PLANNED PURCHASE MODAL -->
+<div class="modal-overlay" id="planned-modal">
+  <div class="modal">
+    <p class="modal-title">New <span>Planned Purchase</span></p>
+    <input type="hidden" id="pp-edit-id"/>
+    <div class="form-group">
+      <label class="form-label">Item Name</label>
+      <input class="form-input" id="pp-name" type="text" placeholder="e.g. GTA VI, PS5 Pro, Creed Aventus..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <select class="form-select" id="pp-cat"></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Estimated Cost ($)</label>
+        <input class="form-input" id="pp-cost" type="number" inputmode="decimal" placeholder="0.00" oninput="calcPpTax()"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tax (%)</label>
+        <input class="form-input" id="pp-tax" type="number" inputmode="decimal" placeholder="0" oninput="calcPpTax()"/>
+      </div>
+    </div>
+    <div style="font-size:13px;color:var(--yellow);font-family:'Syne',sans-serif;font-weight:700;margin:-6px 0 10px;" id="pp-tax-total"></div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Target Month</label>
+        <select class="form-select" id="pp-month"></select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Priority</label>
+        <select class="form-select" id="pp-priority">
+          <option value="Need">Need 🔴</option>
+          <option value="Want">Want 🟡</option>
+          <option value="Luxury">Luxury 💜</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-select" id="pp-status">
+        <option value="planned">Planned</option>
+        <option value="purchased">Purchased</option>
+        <option value="skipped">Skipped</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes</label>
+      <textarea class="form-textarea" id="pp-notes" placeholder="Any extra info, links, where to buy..." style="min-height:56px;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('planned-modal')">Cancel</button>
+      <button class="btn-primary" onclick="savePlanned()">Save</button>
+    </div>
+  </div>
 </div>
 
 <!-- EDIT TRANSACTION MODAL -->
@@ -576,7 +674,7 @@ var KEYWORDS={
   transfer:['transfer','move','send','savings']
 };
 
-var state={transactions:[],goals:[],recurring:[],openingBalances:{}};
+var state={transactions:[],goals:[],recurring:[],openingBalances:{},plannedPurchases:[]};
 var currentMonthOffset=0;
 var currentType='exp';
 var selectedCat='';
@@ -614,6 +712,8 @@ async function load(){
     state.recurring=r.map(function(x){return{id:x.id,name:x.name,amount:x.amount,freq:x.freq,cat:x.cat,acc:x.acc};});
     state.openingBalances={};
     m.forEach(function(x){try{state.openingBalances[x.key]=JSON.parse(x.value);}catch(e){state.openingBalances[x.key]=x.value;}});
+    // restore planned purchases from local (not in Supabase)
+    try{var ls=localStorage.getItem('ahmads-budget3');if(ls){var lsData=JSON.parse(ls);state.plannedPurchases=lsData.plannedPurchases||[];}}catch(e){}
     saveLocal();
     setSyncStatus('ok','Synced');
   }catch(e){
@@ -889,6 +989,7 @@ function renderCurrentSection(){
   if(currentTab==='breakdown')renderBreakdown();
   if(currentTab==='goals')renderGoals();
   if(currentTab==='recurring')renderRecurring();
+  if(currentTab==='planned')renderPlanned();
 }
 
 function renderTransactions(){
@@ -1118,6 +1219,185 @@ function importData(event){
     }catch(err){alert('Could not read file');}
   };
   reader.readAsText(file);event.target.value='';
+}
+
+// PLANNED PURCHASES
+var ppMonthFilter='all';
+var MONTHS_LABELS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function buildPpModal(){
+  // build cat select
+  var sel=document.getElementById('pp-cat');sel.innerHTML='';
+  CATS.filter(function(c){return c.k!=='income'&&c.k!=='transfer'&&c.k!=='refund';}).forEach(function(c){
+    var o=document.createElement('option');o.value=c.k;o.textContent=c.icon+' '+c.l;sel.appendChild(o);
+  });
+  // build month select — current month + next 23 months
+  var msel=document.getElementById('pp-month');msel.innerHTML='';
+  var now=new Date();
+  for(var i=0;i<24;i++){
+    var d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    var key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    var lbl=MONTHS_LABELS[d.getMonth()]+' '+d.getFullYear();
+    var o=document.createElement('option');o.value=key;o.textContent=lbl;msel.appendChild(o);
+  }
+}
+
+function calcPpTax(){
+  var cost=parseFloat(document.getElementById('pp-cost').value)||0;
+  var tax=parseFloat(document.getElementById('pp-tax').value)||0;
+  var el=document.getElementById('pp-tax-total');
+  if(cost>0&&tax>0){
+    var total=cost+(cost*tax/100);
+    el.textContent='Total with tax: '+fmt(total);
+  }else{el.textContent='';}
+}
+
+function openPlannedModal(id){
+  buildPpModal();
+  document.getElementById('pp-edit-id').value=id||'';
+  document.getElementById('pp-tax-total').textContent='';
+  if(id){
+    var p=state.plannedPurchases.find(function(x){return x.id===id;});
+    if(p){
+      document.getElementById('pp-name').value=p.name;
+      document.getElementById('pp-cat').value=p.cat;
+      document.getElementById('pp-cost').value=p.baseCost||p.cost;
+      document.getElementById('pp-tax').value=p.taxPct||'';
+      document.getElementById('pp-month').value=p.month;
+      document.getElementById('pp-priority').value=p.priority;
+      document.getElementById('pp-status').value=p.status;
+      document.getElementById('pp-notes').value=p.notes||'';
+      calcPpTax();
+    }
+  }else{
+    document.getElementById('pp-name').value='';
+    document.getElementById('pp-cost').value='';
+    document.getElementById('pp-tax').value='';
+    document.getElementById('pp-notes').value='';
+  }
+  openModal('planned-modal');
+  setTimeout(function(){document.getElementById('pp-name').focus();},100);
+}
+
+function savePlanned(){
+  var name=document.getElementById('pp-name').value.trim();
+  if(!name){document.getElementById('pp-name').focus();return;}
+  var baseCost=parseFloat(document.getElementById('pp-cost').value)||0;
+  var taxPct=parseFloat(document.getElementById('pp-tax').value)||0;
+  var totalCost=taxPct>0?Math.round((baseCost+(baseCost*taxPct/100))*100)/100:baseCost;
+  var id=document.getElementById('pp-edit-id').value;
+  var entry={
+    id:id||uid(), name:name,
+    cat:document.getElementById('pp-cat').value,
+    baseCost:baseCost, taxPct:taxPct, cost:totalCost,
+    month:document.getElementById('pp-month').value,
+    priority:document.getElementById('pp-priority').value,
+    status:document.getElementById('pp-status').value,
+    notes:document.getElementById('pp-notes').value.trim()
+  };
+  if(id){
+    var idx=state.plannedPurchases.findIndex(function(x){return x.id===id;});
+    if(idx>-1)state.plannedPurchases[idx]=entry;
+  }else{
+    state.plannedPurchases.unshift(entry);
+  }
+  saveLocal();closeModal('planned-modal');renderPlanned();
+}
+
+function markPurchased(id){
+  var p=state.plannedPurchases.find(function(x){return x.id===id;});
+  if(!p)return;
+  p.status='purchased';
+  // also log as an expense transaction
+  var now=new Date();
+  var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var txn={id:uid(),type:'exp',amount:p.cost,cat:p.cat,note:p.name+' (Planned Purchase)',date:dateStr,acc:qaAcc};
+  state.transactions.unshift(txn);
+  syncTransaction(txn,true);
+  saveLocal();updateOverview();renderPlanned();
+  showToast('Marked as purchased & logged as expense ✓');
+}
+
+function deletePlanned(id){
+  state.plannedPurchases=state.plannedPurchases.filter(function(x){return x.id!==id;});
+  saveLocal();renderPlanned();
+}
+
+function renderPlanned(){
+  var sec=document.getElementById('sec-planned');
+  var purchases=state.plannedPurchases||[];
+
+  // build month filter pills
+  var months={};
+  purchases.forEach(function(p){months[p.month]=true;});
+  var sortedMonths=Object.keys(months).sort();
+
+  var html='<div class="section-header"><span class="section-title">Planned Purchases</span><button class="section-btn" onclick="openPlannedModal(null)">+ Add</button></div>';
+
+  // month filter
+  if(sortedMonths.length>0){
+    html+='<div class="planned-month-filter">';
+    html+='<span class="pm-pill'+(ppMonthFilter==='all'?' active':'')+'" onclick="setPpFilter(\'all\')">All</span>';
+    sortedMonths.forEach(function(m){
+      var parts=m.split('-');
+      var lbl=MONTHS_LABELS[parseInt(parts[1])-1]+' '+parts[0];
+      html+='<span class="pm-pill'+(ppMonthFilter===m?' active':'')+'" onclick="setPpFilter(\''+m+'\')">'+lbl+'</span>';
+    });
+    html+='</div>';
+  }
+
+  // filter purchases
+  var filtered=ppMonthFilter==='all'?purchases:purchases.filter(function(p){return p.month===ppMonthFilter;});
+
+  // summary
+  var plannedTotal=filtered.filter(function(p){return p.status==='planned';}).reduce(function(s,p){return s+p.cost;},0);
+  var purchasedTotal=filtered.filter(function(p){return p.status==='purchased';}).reduce(function(s,p){return s+p.cost;},0);
+  var allTotal=filtered.reduce(function(s,p){return s+(p.status!=='skipped'?p.cost:0);},0);
+
+  if(filtered.length>0){
+    html+='<div class="planned-summary">';
+    html+='<div class="planned-summary-title">Summary'+(ppMonthFilter!=='all'?' — '+MONTHS_LABELS[parseInt(ppMonthFilter.split('-')[1])-1]+' '+ppMonthFilter.split('-')[0]:'')+'</div>';
+    html+='<div class="planned-summary-row"><span class="planned-summary-label">Still to spend</span><span class="planned-summary-val">'+fmt(plannedTotal)+'</span></div>';
+    html+='<div class="planned-summary-row"><span class="planned-summary-label">Already purchased</span><span class="planned-summary-val" style="color:var(--green)">'+fmt(purchasedTotal)+'</span></div>';
+    html+='<div class="planned-summary-row" style="border-top:1px solid var(--bg4);padding-top:8px;margin-top:4px;"><span class="planned-summary-label" style="font-weight:500;color:var(--text);">Total planned</span><span class="planned-summary-val" style="font-size:20px;">'+fmt(allTotal)+'</span></div>';
+    html+='</div>';
+  }
+
+  if(!filtered.length){
+    html+='<div class="empty-msg">No planned purchases — add one!</div>';
+    sec.innerHTML=html;return;
+  }
+
+  html+='<div class="pp-list">';
+  filtered.forEach(function(p){
+    var cat=CATS.find(function(c){return c.k===p.cat;})||CATS[CATS.length-1];
+    var monthParts=p.month.split('-');
+    var monthLbl=MONTHS_LABELS[parseInt(monthParts[1])-1]+' '+monthParts[0];
+    html+='<div class="pp-card '+p.status+'">';
+    html+='<div class="pp-icon" style="background:'+cat.color+'22;">'+cat.icon+'</div>';
+    html+='<div class="pp-info">';
+    html+='<div class="pp-name">'+esc(p.name)+'</div>';
+    html+='<div class="pp-meta">';
+    html+='<span class="pp-priority '+p.priority+'">'+p.priority+'</span>';
+    html+='<span class="pp-status '+p.status+'">'+p.status+'</span>';
+    html+='<span style="color:var(--text3);">'+monthLbl+'</span>';
+    if(p.taxPct) html+='<span style="color:var(--text3);">+'+p.taxPct+'% tax</span>';
+    html+='</div>';
+    if(p.notes) html+='<div style="font-size:11px;color:var(--text3);margin-top:3px;font-style:italic;">'+esc(p.notes)+'</div>';
+    html+='</div>';
+    html+='<div class="pp-cost '+p.status+'">'+fmt(p.cost)+'</div>';
+    html+='<div class="pp-actions">';
+    if(p.status==='planned') html+='<button class="pp-act-btn buy" onclick="markPurchased(\''+p.id+'\')" title="Mark as purchased">✓</button>';
+    html+='<button class="pp-act-btn" onclick="openPlannedModal(\''+p.id+'\')" title="Edit">✎</button>';
+    html+='<button class="pp-act-btn del" onclick="deletePlanned(\''+p.id+'\')" title="Delete">✕</button>';
+    html+='</div></div>';
+  });
+  html+='</div>';
+  sec.innerHTML=html;
+}
+
+function setPpFilter(m){
+  ppMonthFilter=m;renderPlanned();
 }
 
 // CALCULATOR
