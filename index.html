@@ -712,8 +712,14 @@ async function load(){
     state.recurring=r.map(function(x){return{id:x.id,name:x.name,amount:x.amount,freq:x.freq,cat:x.cat,acc:x.acc};});
     state.openingBalances={};
     m.forEach(function(x){try{state.openingBalances[x.key]=JSON.parse(x.value);}catch(e){state.openingBalances[x.key]=x.value;}});
-    // restore planned purchases from local (not in Supabase)
-    try{var ls=localStorage.getItem('ahmads-budget3');if(ls){var lsData=JSON.parse(ls);state.plannedPurchases=lsData.plannedPurchases||[];}}catch(e){}
+    // load planned purchases from Supabase
+    try{
+      var pr=await sbFetch('/rest/v1/budget_planned?select=*&order=created_at.desc');
+      var prData=await pr.json();
+      state.plannedPurchases=prData.map(function(x){return{id:x.id,name:x.name,cat:x.cat,baseCost:x.base_cost,taxPct:x.tax_pct,cost:x.cost,month:x.month,priority:x.priority,status:x.status,notes:x.notes||''};});
+    }catch(e){
+      try{var ls=localStorage.getItem('ahmads-budget3');if(ls){var lsData=JSON.parse(ls);state.plannedPurchases=lsData.plannedPurchases||[];}}catch(ex){}
+    }
     saveLocal();
     setSyncStatus('ok','Synced');
   }catch(e){
@@ -1279,7 +1285,7 @@ function openPlannedModal(id){
   setTimeout(function(){document.getElementById('pp-name').focus();},100);
 }
 
-function savePlanned(){
+async function savePlanned(){
   var name=document.getElementById('pp-name').value.trim();
   if(!name){document.getElementById('pp-name').focus();return;}
   var baseCost=parseFloat(document.getElementById('pp-cost').value)||0;
@@ -1295,32 +1301,37 @@ function savePlanned(){
     status:document.getElementById('pp-status').value,
     notes:document.getElementById('pp-notes').value.trim()
   };
+  var sbRow={id:entry.id,name:entry.name,cat:entry.cat,base_cost:entry.baseCost,tax_pct:entry.taxPct,cost:entry.cost,month:entry.month,priority:entry.priority,status:entry.status,notes:entry.notes};
   if(id){
     var idx=state.plannedPurchases.findIndex(function(x){return x.id===id;});
     if(idx>-1)state.plannedPurchases[idx]=entry;
+    try{await sbFetch('/rest/v1/budget_planned?id=eq.'+id,{method:'PATCH',body:JSON.stringify(sbRow)});}catch(e){}
   }else{
     state.plannedPurchases.unshift(entry);
+    try{await sbFetch('/rest/v1/budget_planned',{method:'POST',body:JSON.stringify(sbRow)});}catch(e){}
   }
   saveLocal();closeModal('planned-modal');renderPlanned();
+  showToast('Saved ✓');
 }
 
-function markPurchased(id){
+async function markPurchased(id){
   var p=state.plannedPurchases.find(function(x){return x.id===id;});
   if(!p)return;
   p.status='purchased';
-  // also log as an expense transaction
   var now=new Date();
   var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   var txn={id:uid(),type:'exp',amount:p.cost,cat:p.cat,note:p.name+' (Planned Purchase)',date:dateStr,acc:qaAcc};
   state.transactions.unshift(txn);
   syncTransaction(txn,true);
+  try{await sbFetch('/rest/v1/budget_planned?id=eq.'+id,{method:'PATCH',body:JSON.stringify({status:'purchased'})});}catch(e){}
   saveLocal();updateOverview();renderPlanned();
   showToast('Marked as purchased & logged as expense ✓');
 }
 
-function deletePlanned(id){
+async function deletePlanned(id){
   state.plannedPurchases=state.plannedPurchases.filter(function(x){return x.id!==id;});
   saveLocal();renderPlanned();
+  try{await sbFetch('/rest/v1/budget_planned?id=eq.'+id,{method:'DELETE'});}catch(e){}
 }
 
 function renderPlanned(){
