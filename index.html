@@ -146,8 +146,8 @@ h1 .g{color:var(--green);}h1 .b{color:transparent;-webkit-text-stroke:1.5px var(
 .txn-amount.exp{color:var(--red);}
 .txn-amount.inc{color:var(--green);}
 .txn-amount.transfer{color:var(--transfer);}
-.txn-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px;transition:color .15s;opacity:0;flex-shrink:0;}
-.txn-item:hover .txn-del{opacity:1;}
+.txn-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px;transition:color .15s;flex-shrink:0;}
+
 .txn-del:hover{color:var(--red);}
 
 /* BREAKDOWN */
@@ -232,8 +232,8 @@ h1 .g{color:var(--green);}h1 .b{color:transparent;-webkit-text-stroke:1.5px var(
 .calc-btn.use-btn{background:rgba(46,204,138,.15);color:var(--green);border-color:rgba(46,204,138,.2);font-size:18px;}
 .calc-btn.use-btn:hover{background:rgba(46,204,138,.25);}
 
-.txn-edit-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;transition:color .15s;opacity:0;flex-shrink:0;}
-.txn-item:hover .txn-edit-btn{opacity:1;}
+.txn-edit-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;transition:color .15s;flex-shrink:0;}
+
 .txn-edit-btn:hover{color:var(--blue);}
 .txn-amount.rfn{color:var(--teal);}
 .txn-acc-tag.refund{background:rgba(52,211,153,.12);color:var(--teal);}
@@ -732,35 +732,33 @@ async function save(){
   saveLocal();
 }
 
-async function syncTransaction(txn,isNew){
+// All sync functions are fire-and-forget — UI updates instantly, Supabase syncs in background
+function syncTransaction(txn,isNew){
   var row={id:txn.id,type:txn.type,amount:txn.amount,cat:txn.cat,note:txn.note,date:txn.date,acc:txn.acc,tfr_to:txn.tfrTo||null};
-  try{
-    if(isNew) await sbFetch('/rest/v1/budget_transactions',{method:'POST',body:JSON.stringify(row)});
-    else await sbFetch('/rest/v1/budget_transactions?id=eq.'+txn.id,{method:'PATCH',body:JSON.stringify(row)});
-  }catch(e){}
+  if(isNew) sbFetch('/rest/v1/budget_transactions',{method:'POST',body:JSON.stringify(row)}).catch(function(){});
+  else sbFetch('/rest/v1/budget_transactions?id=eq.'+txn.id,{method:'PATCH',body:JSON.stringify(row)}).catch(function(){});
 }
-async function deleteTransaction(id){
-  saveLocal();
-  try{await sbFetch('/rest/v1/budget_transactions?id=eq.'+id,{method:'DELETE'});}catch(e){}
+function deleteTransaction(id){
+  sbFetch('/rest/v1/budget_transactions?id=eq.'+id,{method:'DELETE'}).catch(function(){});
 }
-async function syncGoal(g,isNew){
-  try{
-    if(isNew) await sbFetch('/rest/v1/budget_goals',{method:'POST',body:JSON.stringify(g)});
-    else await sbFetch('/rest/v1/budget_goals?id=eq.'+g.id,{method:'PATCH',body:JSON.stringify(g)});
-  }catch(e){}
+function syncGoal(g,isNew){
+  if(isNew) sbFetch('/rest/v1/budget_goals',{method:'POST',body:JSON.stringify(g)}).catch(function(){});
+  else sbFetch('/rest/v1/budget_goals?id=eq.'+g.id,{method:'PATCH',body:JSON.stringify(g)}).catch(function(){});
 }
-async function deleteGoalSB(id){try{await sbFetch('/rest/v1/budget_goals?id=eq.'+id,{method:'DELETE'});}catch(e){}}
-async function syncRecurring(r,isNew){
-  try{
-    if(isNew) await sbFetch('/rest/v1/budget_recurring',{method:'POST',body:JSON.stringify(r)});
-  }catch(e){}
+function deleteGoalSB(id){ sbFetch('/rest/v1/budget_goals?id=eq.'+id,{method:'DELETE'}).catch(function(){}); }
+function syncRecurring(r,isNew){
+  if(isNew) sbFetch('/rest/v1/budget_recurring',{method:'POST',body:JSON.stringify(r)}).catch(function(){});
 }
-async function deleteRecurringSB(id){try{await sbFetch('/rest/v1/budget_recurring?id=eq.'+id,{method:'DELETE'});}catch(e){}}
-async function syncOb(key,val){
-  try{
-    await sbFetch('/rest/v1/budget_meta',{method:'POST',body:JSON.stringify({key:key,value:String(val)}),headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'}});
-  }catch(e){}
+function deleteRecurringSB(id){ sbFetch('/rest/v1/budget_recurring?id=eq.'+id,{method:'DELETE'}).catch(function(){}); }
+function syncOb(key,val){
+  sbFetch('/rest/v1/budget_meta',{method:'POST',body:JSON.stringify({key:key,value:String(val)}),headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'}}).catch(function(){});
 }
+function syncPlanned(entry,isNew){
+  var row={id:entry.id,name:entry.name,cat:entry.cat,base_cost:entry.baseCost,tax_pct:entry.taxPct,cost:entry.cost,month:entry.month,priority:entry.priority,status:entry.status,notes:entry.notes};
+  if(isNew) sbFetch('/rest/v1/budget_planned',{method:'POST',body:JSON.stringify(row)}).catch(function(){});
+  else sbFetch('/rest/v1/budget_planned?id=eq.'+entry.id,{method:'PATCH',body:JSON.stringify(row)}).catch(function(){});
+}
+function deletePlannedSB(id){ sbFetch('/rest/v1/budget_planned?id=eq.'+id,{method:'DELETE'}).catch(function(){}); }
 
 function getMonthKey(offset){
   var d=new Date();d.setDate(1);d.setMonth(d.getMonth()+offset);
@@ -1083,7 +1081,7 @@ async function saveEditTxn(){
   t.acc=document.getElementById('et-acc').value;
   t.date=dateStr;
   saveLocal();
-  try{await syncTransaction(t,false);}catch(e){}
+  syncTransaction(t,false);
   closeModal('edit-txn-modal');
   updateOverview();renderTransactions();
   showToast('Updated ✓');
@@ -1293,28 +1291,27 @@ async function savePlanned(){
   var totalCost=taxPct>0?Math.round((baseCost+(baseCost*taxPct/100))*100)/100:baseCost;
   var id=document.getElementById('pp-edit-id').value;
   var entry={
-    id:id||uid(), name:name,
+    id:id||uid(),name:name,
     cat:document.getElementById('pp-cat').value,
-    baseCost:baseCost, taxPct:taxPct, cost:totalCost,
+    baseCost:baseCost,taxPct:taxPct,cost:totalCost,
     month:document.getElementById('pp-month').value,
     priority:document.getElementById('pp-priority').value,
     status:document.getElementById('pp-status').value,
     notes:document.getElementById('pp-notes').value.trim()
   };
-  var sbRow={id:entry.id,name:entry.name,cat:entry.cat,base_cost:entry.baseCost,tax_pct:entry.taxPct,cost:entry.cost,month:entry.month,priority:entry.priority,status:entry.status,notes:entry.notes};
   if(id){
     var idx=state.plannedPurchases.findIndex(function(x){return x.id===id;});
     if(idx>-1)state.plannedPurchases[idx]=entry;
-    try{await sbFetch('/rest/v1/budget_planned?id=eq.'+id,{method:'PATCH',body:JSON.stringify(sbRow)});}catch(e){}
+    syncPlanned(entry,false);
   }else{
     state.plannedPurchases.unshift(entry);
-    try{await sbFetch('/rest/v1/budget_planned',{method:'POST',body:JSON.stringify(sbRow)});}catch(e){}
+    syncPlanned(entry,true);
   }
   saveLocal();closeModal('planned-modal');renderPlanned();
   showToast('Saved ✓');
 }
 
-async function markPurchased(id){
+function markPurchased(id){
   var p=state.plannedPurchases.find(function(x){return x.id===id;});
   if(!p)return;
   p.status='purchased';
@@ -1323,15 +1320,15 @@ async function markPurchased(id){
   var txn={id:uid(),type:'exp',amount:p.cost,cat:p.cat,note:p.name+' (Planned Purchase)',date:dateStr,acc:qaAcc};
   state.transactions.unshift(txn);
   syncTransaction(txn,true);
-  try{await sbFetch('/rest/v1/budget_planned?id=eq.'+id,{method:'PATCH',body:JSON.stringify({status:'purchased'})});}catch(e){}
+  syncPlanned(p,false);
   saveLocal();updateOverview();renderPlanned();
   showToast('Marked as purchased & logged as expense ✓');
 }
 
-async function deletePlanned(id){
+function deletePlanned(id){
   state.plannedPurchases=state.plannedPurchases.filter(function(x){return x.id!==id;});
+  deletePlannedSB(id);
   saveLocal();renderPlanned();
-  try{await sbFetch('/rest/v1/budget_planned?id=eq.'+id,{method:'DELETE'});}catch(e){}
 }
 
 function renderPlanned(){
