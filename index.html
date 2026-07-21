@@ -113,6 +113,43 @@ h1 .b{background:linear-gradient(135deg,var(--purple),var(--blue));-webkit-backg
   padding:2px 0 10px;cursor:pointer;text-align:center;transition:color .15s;}
 .more-cats-btn:hover{color:var(--text);}
 
+/* PERSONALIZED TAGS — designed to stand out from categories */
+.tags-section{margin-bottom:12px;}
+.tags-section-label{font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--text2);margin-bottom:8px;font-weight:700;}
+.selected-tags-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.selected-tags-row:empty{display:none;margin-bottom:0;}
+.user-tag{display:inline-flex;align-items:center;gap:6px;
+  background:linear-gradient(135deg,#FFB84D,#FF7A45);
+  color:#1A0E00;font-family:'Manrope',sans-serif;font-size:12px;font-weight:800;
+  padding:7px 13px;border-radius:20px;
+  box-shadow:0 4px 14px -4px rgba(255,138,61,.6),inset 0 1px 0 rgba(255,255,255,.35);
+  letter-spacing:.02em;cursor:pointer;transition:all .15s;}
+.user-tag:hover{filter:brightness(1.06);transform:translateY(-1px);}
+.user-tag .ut-remove{font-size:13px;font-weight:900;opacity:.7;margin-left:2px;}
+.user-tag .ut-remove:hover{opacity:1;}
+.tag-add-row{display:flex;gap:8px;margin-bottom:8px;}
+.tag-add-input{flex:1;background:var(--bg2);border:1px solid var(--bg4);border-radius:14px;color:var(--text);
+  font-family:'Manrope',sans-serif;font-size:13px;padding:10px 14px;outline:none;transition:border-color .2s;}
+.tag-add-input:focus{border-color:#FF9147;}
+.tag-add-input::placeholder{color:var(--text3);}
+.tag-add-btn{background:linear-gradient(135deg,#FFB84D,#FF7A45);border:none;color:#1A0E00;font-size:18px;font-weight:800;
+  width:42px;border-radius:14px;cursor:pointer;flex-shrink:0;transition:all .15s;
+  box-shadow:0 4px 14px -4px rgba(255,138,61,.5);}
+.tag-add-btn:hover{filter:brightness(1.08);}
+.suggested-tags-row{display:flex;flex-wrap:wrap;gap:6px;}
+.suggested-tags-row:empty{display:none;}
+.suggested-tag{display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,145,71,.1);border:1.5px dashed rgba(255,145,71,.4);
+  color:#FFB84D;font-family:'Manrope',sans-serif;font-size:11.5px;font-weight:700;
+  padding:6px 12px;border-radius:20px;cursor:pointer;transition:all .15s;}
+.suggested-tag:hover{background:rgba(255,145,71,.2);border-color:#FF9147;}
+
+/* tag chips shown on transaction list items */
+.txn-tag{display:inline-flex;align-items:center;
+  background:linear-gradient(135deg,#FFB84D,#FF7A45);color:#1A0E00;
+  font-size:9.5px;font-weight:800;padding:2px 9px;border-radius:10px;
+  letter-spacing:.02em;box-shadow:0 2px 6px -2px rgba(255,138,61,.5);}
+
 /* TRANSFER ROW */
 .transfer-row{display:none;gap:8px;margin-bottom:10px;}
 .transfer-row.show{display:flex;}
@@ -212,6 +249,10 @@ h1 .b{background:linear-gradient(135deg,var(--purple),var(--blue));-webkit-backg
 .rec-freq{font-size:11.5px;color:var(--text2);margin-top:1px;}
 .rec-amount{font-family:'Manrope',sans-serif;font-size:15.5px;font-weight:800;color:var(--red);flex-shrink:0;}
 .rec-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:4px;transition:color .15s;}
+.rec-log-btn{background:var(--bg3);border:1px solid var(--bg4);color:var(--green);width:28px;height:28px;border-radius:10px;cursor:pointer;font-size:13px;flex-shrink:0;transition:all .15s;}
+.rec-log-btn:hover{border-color:var(--green);background:rgba(46,217,145,.1);}
+.rec-edit{background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;padding:4px;transition:color .15s;flex-shrink:0;}
+.rec-edit:hover{color:#B6A3FF;}
 .rec-del:hover{color:var(--red);}
 
 .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
@@ -434,6 +475,7 @@ h1 .b{background:linear-gradient(135deg,var(--purple),var(--blue));-webkit-backg
   <div class="date-pill-row" id="date-pill-row">
     <button class="date-pill" id="date-pill-btn" onclick="toggleDateEdit()">📅 <span id="date-pill-label">Today</span></button>
     <button class="tax-pill" id="tax-pill-btn" onclick="toggleTaxEdit()">+ Add Tax %</button>
+    <button class="tax-pill" id="overseas-pill-btn" onclick="toggleOverseasFee()">🌍 +2% Overseas</button>
   </div>
   <div class="date-row" id="date-row" style="display:none;">
     <select id="qa-day"></select>
@@ -453,6 +495,16 @@ h1 .b{background:linear-gradient(135deg,var(--purple),var(--blue));-webkit-backg
   <button class="more-cats-btn" id="more-cats-btn" onclick="toggleMoreCats()">More categories ▾</button>
   <div class="cat-guess" id="cat-guess-row" style="display:none;">
     <div class="cat-chips-wrap" id="cat-chips"></div>
+  </div>
+
+  <div class="tags-section">
+    <div class="tags-section-label">🏷️ Tags</div>
+    <div class="selected-tags-row" id="selected-tags-row"></div>
+    <div class="tag-add-row">
+      <input class="tag-add-input" id="new-tag-input" type="text" placeholder="Type a tag and hit enter (e.g. Amazon)..." onkeydown="if(event.key==='Enter'){event.preventDefault();addNewTag();}"/>
+      <button class="tag-add-btn" onclick="addNewTag()">+</button>
+    </div>
+    <div class="suggested-tags-row" id="suggested-tags-row"></div>
   </div>
 
   <input class="note-input" id="qa-note" type="text" placeholder="Note (optional — type a name to auto-detect category)" oninput="onAmountInput()"/>
@@ -577,6 +629,15 @@ h1 .b{background:linear-gradient(135deg,var(--purple),var(--blue));-webkit-backg
         <option value="savings">🏦 Savings</option>
       </select>
     </div>
+    <div class="form-group">
+      <label class="form-label">Tags</label>
+      <div class="selected-tags-row" id="et-selected-tags-row"></div>
+      <div class="tag-add-row">
+        <input class="tag-add-input" id="et-new-tag-input" type="text" placeholder="Type a tag and hit enter..." onkeydown="if(event.key==='Enter'){event.preventDefault();addEtTag();}"/>
+        <button class="tag-add-btn" onclick="addEtTag()">+</button>
+      </div>
+      <div class="suggested-tags-row" id="et-suggested-tags-row"></div>
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">Day</label>
@@ -647,7 +708,8 @@ h1 .b{background:linear-gradient(135deg,var(--purple),var(--blue));-webkit-backg
 <!-- RECURRING MODAL -->
 <div class="modal-overlay" id="rec-modal">
   <div class="modal">
-    <p class="modal-title">New <span>Recurring</span></p>
+    <p class="modal-title" id="rec-modal-title">New <span>Recurring</span></p>
+    <input type="hidden" id="rec-edit-id"/>
     <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="r-name" placeholder="e.g. Netflix, Rent..."/></div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Amount ($)</label><input class="form-input" id="r-amount" type="number" placeholder="0"/></div>
@@ -717,6 +779,7 @@ var state={transactions:[],goals:[],recurring:[],openingBalances:{},plannedPurch
 var currentMonthOffset=0;
 var currentType='exp';
 var selectedCat='';
+var currentTags=[];
 var qaAcc='current';
 var currentTab='add';
 
@@ -746,9 +809,9 @@ async function load(){
       sbFetch('/rest/v1/budget_recurring?select=*').then(function(r){return r.json();}),
       sbFetch('/rest/v1/budget_meta?select=*').then(function(r){return r.json();})
     ]);
-    state.transactions=t.map(function(x){return{id:x.id,type:x.type,amount:x.amount,cat:x.cat,note:x.note,date:x.date,acc:x.acc,tfrTo:x.tfr_to};});
+    state.transactions=t.map(function(x){return{id:x.id,type:x.type,amount:x.amount,cat:x.cat,note:x.note,date:x.date,acc:x.acc,tfrTo:x.tfr_to,tags:x.tags?JSON.parse(x.tags):[]};});
     state.goals=g.map(function(x){return{id:x.id,name:x.name,target:x.target,saved:x.saved};});
-    state.recurring=r.map(function(x){return{id:x.id,name:x.name,amount:x.amount,freq:x.freq,cat:x.cat,acc:x.acc};});
+    state.recurring=r.map(function(x){return{id:x.id,name:x.name,amount:x.amount,freq:x.freq,cat:x.cat,acc:x.acc,lastLogged:x.lastlogged||x.lastLogged||null};});
     state.openingBalances={};
     m.forEach(function(x){try{state.openingBalances[x.key]=JSON.parse(x.value);}catch(e){state.openingBalances[x.key]=x.value;}});
     // load planned purchases from Supabase
@@ -773,7 +836,7 @@ async function save(){
 
 // All sync functions are fire-and-forget — UI updates instantly, Supabase syncs in background
 function syncTransaction(txn,isNew){
-  var row={id:txn.id,type:txn.type,amount:txn.amount,cat:txn.cat,note:txn.note,date:txn.date,acc:txn.acc,tfr_to:txn.tfrTo||null};
+  var row={id:txn.id,type:txn.type,amount:txn.amount,cat:txn.cat,note:txn.note,date:txn.date,acc:txn.acc,tfr_to:txn.tfrTo||null,tags:JSON.stringify(txn.tags||[])};
   if(isNew) sbFetch('/rest/v1/budget_transactions',{method:'POST',body:JSON.stringify(row)}).catch(function(){});
   else sbFetch('/rest/v1/budget_transactions?id=eq.'+txn.id,{method:'PATCH',body:JSON.stringify(row)}).catch(function(){});
 }
@@ -786,7 +849,9 @@ function syncGoal(g,isNew){
 }
 function deleteGoalSB(id){ sbFetch('/rest/v1/budget_goals?id=eq.'+id,{method:'DELETE'}).catch(function(){}); }
 function syncRecurring(r,isNew){
-  if(isNew) sbFetch('/rest/v1/budget_recurring',{method:'POST',body:JSON.stringify(r)}).catch(function(){});
+  var row={id:r.id,name:r.name,amount:r.amount,freq:r.freq,cat:r.cat,acc:r.acc,lastlogged:r.lastLogged||null};
+  if(isNew) sbFetch('/rest/v1/budget_recurring',{method:'POST',body:JSON.stringify(row)}).catch(function(){});
+  else sbFetch('/rest/v1/budget_recurring?id=eq.'+r.id,{method:'PATCH',body:JSON.stringify(row)}).catch(function(){});
 }
 function deleteRecurringSB(id){ sbFetch('/rest/v1/budget_recurring?id=eq.'+id,{method:'DELETE'}).catch(function(){}); }
 function syncOb(key,val){
@@ -898,7 +963,7 @@ function setType(t){
   document.getElementById('date-pill-row').style.display=isTfr?'none':'flex';
   var taxBtn=document.getElementById('tax-pill-btn');
   taxBtn.style.display=isExp?'inline-block':'none';
-  if(!isExp){document.getElementById('tax-row').style.display='none';taxBtn.classList.remove('active');}
+  if(!isExp){document.getElementById('tax-row').style.display='none';taxBtn.classList.remove('active');document.getElementById('overseas-pill-btn').classList.remove('active');}
 
   var label=document.getElementById('qa-acc-label');
   if(isTfr){label.textContent='Transfer';label.className='qa-acc-pill transfer';}
@@ -924,6 +989,23 @@ function toggleTaxEdit(){
   row.style.display=showing?'none':'flex';
   document.getElementById('tax-pill-btn').classList.toggle('active',!showing);
 }
+function toggleOverseasFee(){
+  var taxInput=document.getElementById('qa-tax');
+  var row=document.getElementById('tax-row');
+  var btn=document.getElementById('overseas-pill-btn');
+  var isActive=btn.classList.contains('active');
+  if(isActive){
+    // turn off — clear the 2% if it's still exactly 2
+    if(taxInput.value==='2')taxInput.value='';
+    btn.classList.remove('active');
+  }else{
+    taxInput.value='2';
+    row.style.display='flex';
+    document.getElementById('tax-pill-btn').classList.add('active');
+    btn.classList.add('active');
+  }
+  calcWithTax();
+}
 function updateDatePillLabel(){
   var day=parseInt(document.getElementById('qa-day').value);
   var month=parseInt(document.getElementById('qa-month').value);
@@ -941,6 +1023,53 @@ function toggleMoreCats(){
   var showing=row.style.display!=='none';
   row.style.display=showing?'none':'flex';
   document.getElementById('more-cats-btn').textContent=showing?'More categories ▾':'Fewer categories ▴';
+}
+
+// ---- PERSONALIZED TAGS ----
+function getAllUserTags(){
+  var counts={};
+  state.transactions.forEach(function(t){
+    (t.tags||[]).forEach(function(tag){counts[tag]=(counts[tag]||0)+1;});
+  });
+  return Object.keys(counts).sort(function(a,b){return counts[b]-counts[a];});
+}
+function renderSelectedTags(){
+  var row=document.getElementById('selected-tags-row');
+  if(!row)return;
+  row.innerHTML=currentTags.map(function(tag){
+    return '<span class="user-tag" onclick="removeTag(\''+tag.replace(/'/g,"\\'")+'\')">'+esc(tag)+'<span class="ut-remove">✕</span></span>';
+  }).join('');
+}
+function renderSuggestedTags(){
+  var row=document.getElementById('suggested-tags-row');
+  if(!row)return;
+  var all=getAllUserTags();
+  var remaining=all.filter(function(t){return currentTags.indexOf(t)===-1;}).slice(0,10);
+  row.innerHTML=remaining.map(function(tag){
+    return '<span class="suggested-tag" onclick="addSuggestedTag(\''+tag.replace(/'/g,"\\'")+'\')">+ '+esc(tag)+'</span>';
+  }).join('');
+}
+function addNewTag(){
+  var input=document.getElementById('new-tag-input');
+  var tag=input.value.trim();
+  if(!tag)return;
+  var exists=currentTags.some(function(t){return t.toLowerCase()===tag.toLowerCase();});
+  if(!exists)currentTags.push(tag);
+  input.value='';
+  renderSelectedTags();renderSuggestedTags();
+  input.focus();
+}
+function addSuggestedTag(tag){
+  if(currentTags.indexOf(tag)===-1)currentTags.push(tag);
+  renderSelectedTags();renderSuggestedTags();
+}
+function removeTag(tag){
+  currentTags=currentTags.filter(function(t){return t!==tag;});
+  renderSelectedTags();renderSuggestedTags();
+}
+function resetTags(){
+  currentTags=[];
+  renderSelectedTags();renderSuggestedTags();
 }
 
 function setQaAcc(acc){
@@ -1077,30 +1206,34 @@ function addEntry(){
     var from=document.getElementById('tfr-from').value;
     var to=document.getElementById('tfr-to').value;
     if(from===to){showToast('From and To cannot be the same account');return;}
-    var tfr={id:uid(),type:'transfer',amount:amt,cat:'transfer',note:note||('Transfer → '+(to==='savings'?'Savings':'Current')),date:dateStr,acc:from,tfrTo:to};
+    var tfr={id:uid(),type:'transfer',amount:amt,cat:'transfer',note:note||('Transfer → '+(to==='savings'?'Savings':'Current')),date:dateStr,acc:from,tfrTo:to,tags:currentTags.slice()};
     state.transactions.unshift(tfr);saveLocal();syncTransaction(tfr,true);
     document.getElementById('qa-amount').value='';document.getElementById('qa-note').value='';
+    resetTags();
     updateOverview();showToast('Transfer logged ✓');return;
   }
 
   if(currentType==='rfn'){
     var cat='refund';
-    var rfn={id:uid(),type:'refund',amount:amt,cat:cat,note:note||'Refund',date:dateStr,acc:qaAcc};
+    var rfn={id:uid(),type:'refund',amount:amt,cat:cat,note:note||'Refund',date:dateStr,acc:qaAcc,tags:currentTags.slice()};
     state.transactions.unshift(rfn);saveLocal();syncTransaction(rfn,true);
     document.getElementById('qa-amount').value='';document.getElementById('qa-note').value='';
     selectedCat='';buildCatChips('');
     document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('selected');});
+    resetTags();
     updateOverview();showToast('Refund logged ✓');return;
   }
 
   var cat=selectedCat||(currentType==='inc'?'income':'other');
   var catObj=CATS.find(function(c){return c.k===cat;})||CATS[CATS.length-1];
-  var txn={id:uid(),type:currentType,amount:amt,cat:cat,note:note||catObj.l,date:dateStr,acc:qaAcc};
+  var txn={id:uid(),type:currentType,amount:amt,cat:cat,note:note||catObj.l,date:dateStr,acc:qaAcc,tags:currentTags.slice()};
   state.transactions.unshift(txn);saveLocal();syncTransaction(txn,true);
   document.getElementById('qa-amount').value='';document.getElementById('qa-note').value='';
   document.getElementById('qa-tax').value='';document.getElementById('tax-total').textContent='';
+  document.getElementById('overseas-pill-btn').classList.remove('active');
   selectedCat='';buildCatChips('');
   document.querySelectorAll('.preset-btn').forEach(function(b){b.classList.remove('selected');});
+  resetTags();
   updateOverview();renderFavRow();showToast('Added ✓');
 }
 
@@ -1147,6 +1280,7 @@ function renderTransactions(){
       }else{
         html+='<span class="txn-acc-tag '+(t.acc||'current')+'">'+(t.acc==='savings'?'Savings':'Current')+'</span>';
       }
+      (t.tags||[]).forEach(function(tag){html+='<span class="txn-tag">'+esc(tag)+'</span>';});
       html+='</div></div>';
       if(isTfr){
         html+='<div class="txn-amount transfer">⇄ '+fmt(t.amount).replace('-','')+'</div>';
@@ -1162,6 +1296,7 @@ function renderTransactions(){
   html+='</div>';sec.innerHTML=html;
 }
 
+var etTags=[];
 function openEditTxn(id){
   var t=state.transactions.find(function(x){return x.id===id;});
   if(!t)return;
@@ -1169,6 +1304,8 @@ function openEditTxn(id){
   document.getElementById('et-amount').value=t.amount;
   document.getElementById('et-note').value=t.note||'';
   document.getElementById('et-acc').value=t.acc||'current';
+  etTags=(t.tags||[]).slice();
+  renderEtTags();
   // build cat select
   var sel=document.getElementById('et-cat');sel.innerHTML='';
   CATS.forEach(function(c){var o=document.createElement('option');o.value=c.k;o.textContent=c.icon+' '+c.l;if(c.k===t.cat)o.selected=true;sel.appendChild(o);});
@@ -1176,6 +1313,36 @@ function openEditTxn(id){
   buildEditDateSelects(t.date);
   openModal('edit-txn-modal');
   setTimeout(function(){document.getElementById('et-amount').focus();},100);
+}
+function renderEtTags(){
+  var row=document.getElementById('et-selected-tags-row');
+  if(!row)return;
+  row.innerHTML=etTags.map(function(tag){
+    return '<span class="user-tag" onclick="removeEtTag(\''+tag.replace(/'/g,"\\'")+'\')">'+esc(tag)+'<span class="ut-remove">✕</span></span>';
+  }).join('');
+  var sugRow=document.getElementById('et-suggested-tags-row');
+  if(sugRow){
+    var remaining=getAllUserTags().filter(function(t){return etTags.indexOf(t)===-1;}).slice(0,10);
+    sugRow.innerHTML=remaining.map(function(tag){
+      return '<span class="suggested-tag" onclick="addEtSuggestedTag(\''+tag.replace(/'/g,"\\'")+'\')">+ '+esc(tag)+'</span>';
+    }).join('');
+  }
+}
+function addEtTag(){
+  var input=document.getElementById('et-new-tag-input');
+  var tag=input.value.trim();
+  if(!tag)return;
+  var exists=etTags.some(function(t){return t.toLowerCase()===tag.toLowerCase();});
+  if(!exists)etTags.push(tag);
+  input.value='';renderEtTags();input.focus();
+}
+function addEtSuggestedTag(tag){
+  if(etTags.indexOf(tag)===-1)etTags.push(tag);
+  renderEtTags();
+}
+function removeEtTag(tag){
+  etTags=etTags.filter(function(t){return t!==tag;});
+  renderEtTags();
 }
 
 function buildEditDateSelects(dateStr){
@@ -1205,6 +1372,7 @@ async function saveEditTxn(){
   t.cat=document.getElementById('et-cat').value;
   t.acc=document.getElementById('et-acc').value;
   t.date=dateStr;
+  t.tags=etTags.slice();
   saveLocal();
   syncTransaction(t,false);
   closeModal('edit-txn-modal');
@@ -1276,27 +1444,76 @@ function saveFunds(){
 function renderRecurring(){
   var sec=document.getElementById('sec-recurring');
   var monthlyTotal=state.recurring.reduce(function(s,r){var m=r.freq==='Weekly'?r.amount*4.33:r.freq==='Yearly'?r.amount/12:r.amount;return s+m;},0);
-  var html='<div class="section-header"><span class="section-title">Recurring Bills</span><button class="section-btn" onclick="openModal(\'rec-modal\')">+ Add Bill</button></div>';
+  var html='<div class="section-header"><span class="section-title">Recurring Bills</span><button class="section-btn" onclick="openRecModal(null)">+ Add Bill</button></div>';
   if(monthlyTotal>0)html+='<div style="text-align:center;padding:8px 0 14px;font-size:13px;color:var(--text2);">Monthly commitment: <span style="color:var(--red);font-family:Syne,sans-serif;font-weight:700;">'+fmt(monthlyTotal)+'</span></div>';
   if(!state.recurring.length){html+='<div class="empty-msg">No recurring bills added yet</div>';sec.innerHTML=html;return;}
+  var thisMonth=new Date().toISOString().slice(0,7);
   html+='<div class="rec-list">';
   state.recurring.forEach(function(r){
     var cat=CATS.find(function(c){return c.k===r.cat;})||CATS[CATS.length-1];
+    var loggedThisMonth=r.lastLogged===thisMonth;
     html+='<div class="rec-item"><div class="txn-icon" style="background:'+cat.color+'22;">'+cat.icon+'</div>';
-    html+='<div class="rec-info"><div class="rec-name">'+esc(r.name)+'</div><div class="rec-freq">'+r.freq+' · '+(r.acc==='savings'?'Savings':'Current')+'</div></div>';
+    html+='<div class="rec-info"><div class="rec-name">'+esc(r.name)+'</div><div class="rec-freq">'+r.freq+' · '+(r.acc==='savings'?'Savings':'Current')+(loggedThisMonth?' · <span style="color:var(--green);">✓ Logged</span>':'')+'</div></div>';
     html+='<div class="rec-amount">'+fmt(r.amount)+'</div>';
+    html+='<button class="rec-log-btn" onclick="logSingleRecurring(\''+r.id+'\')" title="Log this bill now">'+(loggedThisMonth?'↺':'✓')+'</button>';
+    html+='<button class="rec-edit" onclick="openRecModal(\''+r.id+'\')">✎</button>';
     html+='<button class="rec-del" onclick="deleteRecurring(\''+r.id+'\')">✕</button></div>';
   });
-  html+='</div><div style="margin-top:12px;"><button class="add-entry-btn" style="background:var(--bg3);color:var(--text2);border:1px solid var(--bg5);" onclick="importRecurring()">Import This Month\'s Bills</button></div>';
+  html+='</div><div style="margin-top:12px;"><button class="add-entry-btn" style="background:var(--bg3);color:var(--text2);border:1px solid var(--bg5);" onclick="importRecurring()">Log All Unlogged Bills This Month</button></div>';
   sec.innerHTML=html;
+}
+function openRecModal(id){
+  document.getElementById('rec-edit-id').value=id||'';
+  document.getElementById('rec-modal-title').innerHTML=id?'Edit <span>Recurring</span>':'New <span>Recurring</span>';
+  if(id){
+    var r=state.recurring.find(function(x){return x.id===id;});
+    if(r){
+      document.getElementById('r-name').value=r.name;
+      document.getElementById('r-amount').value=r.amount;
+      document.getElementById('r-freq').value=r.freq;
+      document.getElementById('r-acc').value=r.acc||'current';
+      document.getElementById('r-cat').value=r.cat;
+    }
+  }else{
+    document.getElementById('r-name').value='';
+    document.getElementById('r-amount').value='';
+    document.getElementById('r-freq').value='Monthly';
+    document.getElementById('r-acc').value='current';
+  }
+  openModal('rec-modal');
 }
 function saveRecurring(){
   var name=document.getElementById('r-name').value.trim();
   var amt=parseFloat(document.getElementById('r-amount').value)||0;
   if(!name||!amt)return;
-  var r={id:uid(),name:name,amount:amt,freq:document.getElementById('r-freq').value,cat:document.getElementById('r-cat').value,acc:document.getElementById('r-acc').value};
-  state.recurring.push(r);saveLocal();syncRecurring(r,true);
+  var editId=document.getElementById('rec-edit-id').value;
+  if(editId){
+    var r=state.recurring.find(function(x){return x.id===editId;});
+    if(r){
+      r.name=name;r.amount=amt;r.freq=document.getElementById('r-freq').value;
+      r.cat=document.getElementById('r-cat').value;r.acc=document.getElementById('r-acc').value;
+      saveLocal();syncRecurring(r,false);
+    }
+  }else{
+    var r={id:uid(),name:name,amount:amt,freq:document.getElementById('r-freq').value,cat:document.getElementById('r-cat').value,acc:document.getElementById('r-acc').value};
+    state.recurring.push(r);saveLocal();syncRecurring(r,true);
+  }
   closeModal('rec-modal');renderRecurring();
+}
+function logSingleRecurring(id){
+  var r=state.recurring.find(function(x){return x.id===id;});
+  if(!r)return;
+  var thisMonth=new Date().toISOString().slice(0,7);
+  if(r.lastLogged===thisMonth){
+    if(!confirm('You already logged "'+r.name+'" this month. Log it again anyway?'))return;
+  }
+  var now=new Date();
+  var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+  var txn={id:uid(),type:'exp',amount:r.amount,cat:r.cat,note:r.name,date:dateStr,acc:r.acc||'current'};
+  state.transactions.unshift(txn);syncTransaction(txn,true);
+  r.lastLogged=thisMonth;
+  saveLocal();syncRecurring(r,false);
+  updateOverview();showToast(r.name+' logged ✓');renderRecurring();
 }
 function deleteRecurring(id){
   if(!confirm('Remove this recurring bill?'))return;
@@ -1304,13 +1521,17 @@ function deleteRecurring(id){
   saveLocal();deleteRecurringSB(id);renderRecurring();
 }
 function importRecurring(){
+  var thisMonth=new Date().toISOString().slice(0,7);
+  var unlogged=state.recurring.filter(function(r){return r.lastLogged!==thisMonth;});
+  if(!unlogged.length){showToast('All bills already logged this month ✓');return;}
   var now=new Date();
   var dateStr=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
-  state.recurring.forEach(function(r){
+  unlogged.forEach(function(r){
     var txn={id:uid(),type:'exp',amount:r.amount,cat:r.cat,note:r.name,date:dateStr,acc:r.acc||'current'};
     state.transactions.unshift(txn);syncTransaction(txn,true);
+    r.lastLogged=thisMonth;syncRecurring(r,false);
   });
-  saveLocal();updateOverview();showToast(state.recurring.length+' bills imported ✓');
+  saveLocal();updateOverview();showToast(unlogged.length+' bill'+(unlogged.length>1?'s':'')+' logged ✓');renderRecurring();
 }
 function buildRecCatSelect(){
   var sel=document.getElementById('r-cat');sel.innerHTML='';
@@ -1576,7 +1797,7 @@ function useCalcResult(){
 
 load().then(function(){
   document.getElementById('month-label').textContent=getMonthLabel(0);
-  initDateSelects();buildPresets();buildCatChips('');buildRecCatSelect();renderFavRow();
+  initDateSelects();buildPresets();buildCatChips('');buildRecCatSelect();renderFavRow();setQaAcc(qaAcc);renderSelectedTags();renderSuggestedTags();
   updateOverview();
   document.getElementById('qa-panel').style.display='block';
   document.getElementById('tax-row').style.display='flex';
